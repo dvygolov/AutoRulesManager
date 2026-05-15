@@ -1,0 +1,20 @@
+{
+  "name": "autorulesmanager",
+  "version": "150526b5",
+  "private": true,
+  "description": "Browser-side Facebook Ads Manager automated rules export, import, status, and bookmarklet loader tooling.",
+  "scripts": {
+    "check": "node --check autorules-og-packager.js && node --check autorules-manager.js && node --check autorules-loader.js",
+    "build": "node autorules-og-packager.js --base-url=https://autorulesmanager.pages.dev/autorules",
+    "deploy": "npx wrangler pages deploy ./dist --project-name=autorulesmanager --branch=main --commit-dirty=true"
+  },
+  "keywords": [
+    "facebook-ads",
+    "ads-manager",
+    "bookmarklet",
+    "automated-rules"
+  ],
+  "author": "Yellow Web",
+  "license": "UNLICENSED",
+  "devDependencies": {}
+}
