@@ -1,5 +1,5 @@
 const Config = {
-  VERSION: "150526b9",
+  VERSION: "150526b11",
   BATCH_SIZE: 40,
   BATCH_DELAY_MS: 600,
   ACCOUNT_DELAY_MS: 1000,
@@ -188,6 +188,37 @@ function stringifyIfNeeded(value) {
     return value;
   }
   return JSON.stringify(value);
+}
+
+function parseBatchBody(body) {
+  if (!body) return null;
+  if (typeof body !== "string") return body;
+  try {
+    return JSON.parse(body);
+  } catch (error) {
+    return { rawBody: body, parseError: error.message || String(error) };
+  }
+}
+
+function formatBatchError(response, rule, accountName, accountId, index) {
+  const statusCode = response?.code ?? "no-status";
+  const parsedBody = parseBatchBody(response?.body);
+  const error = parsedBody?.error || null;
+  const details = [];
+
+  if (error?.message) details.push(error.message);
+  else if (parsedBody?.rawBody) details.push(parsedBody.rawBody);
+  else if (parsedBody) details.push(JSON.stringify(parsedBody));
+  else details.push("Unknown batch error");
+
+  if (error?.type) details.push(`type=${error.type}`);
+  if (error?.code != null) details.push(`code=${error.code}`);
+  if (error?.error_subcode != null) details.push(`subcode=${error.error_subcode}`);
+  if (error?.is_transient != null) details.push(`transient=${error.is_transient}`);
+  if (error?.fbtrace_id) details.push(`fbtrace_id=${error.fbtrace_id}`);
+  if (parsedBody?.parseError) details.push(`body_parse_error=${parsedBody.parseError}`);
+
+  return `Batch item ${index + 1} failed for rule "${rule?.name || "unknown"}" in ${accountName} (${accountId}), HTTP ${statusCode}: ${details.join("; ")}`;
 }
 
 // ============================================
@@ -951,7 +982,7 @@ async function importRulesToAccount(accountId, rules, clearExisting, mainErrorLo
               throw new Error("No response item");
             }
             const statusCode = resp.code;
-            const body = resp.body ? JSON.parse(resp.body) : null;
+            const body = parseBatchBody(resp.body);
             if (statusCode >= 200 && statusCode < 300 && !(body?.error)) {
               importedCount++;
               if (rule.status === "DISABLED") {
@@ -962,15 +993,16 @@ async function importRulesToAccount(accountId, rules, clearExisting, mainErrorLo
                 importedOtherCount++;
               }
             } else {
-              const message = body?.error?.message || JSON.stringify(body) || "Unknown batch error";
-              const errorMessage = `Error adding rule ${rule.name || 'unknown'} to account ${accountName} (${accountId}): ${message}`;
+              const errorMessage = formatBatchError(resp, rule, accountName, accountId, i);
               console.error(errorMessage);
+              logger.error(errorMessage);
               accountErrorLog.push(errorMessage);
               if (mainErrorLog) mainErrorLog.push(errorMessage);
             }
           } catch (responseError) {
-            const errorMessage = `Error parsing batch response for rule ${rule.name || 'unknown'}: ${responseError.message || responseError}`;
+            const errorMessage = `Error handling batch response for rule ${rule.name || 'unknown'} in ${accountName} (${accountId}): ${responseError.message || responseError}`;
             console.error(errorMessage);
+            logger.error(errorMessage);
             accountErrorLog.push(errorMessage);
             if (mainErrorLog) mainErrorLog.push(errorMessage);
           }
@@ -2225,6 +2257,10 @@ const CURRENCY_OFFSETS = CurrencyConverter.OFFSETS;
 ${chunkArray.toString()}
 
 ${stringifyIfNeeded.toString()}
+
+${parseBatchBody.toString()}
+
+${formatBatchError.toString()}
 
 ${AccountManager.toString()}
 

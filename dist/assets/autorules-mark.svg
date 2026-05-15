@@ -7,6 +7,5 @@
     </linearGradient>
   </defs>
   <rect x="4" y="4" width="88" height="88" rx="22" fill="#151515" stroke="url(#autorules-gold)" stroke-width="6"/>
-  <path d="M21 66 35 29h12l14 37H50l-2-7H34l-2 7Zm16-16h8l-4-12Z" fill="url(#autorules-gold)"/>
-  <path d="M58 66V29h10v28h15v9Z" fill="#fff2bd" fill-opacity="0.97"/>
+  <text x="48" y="61" text-anchor="middle" font-family="Trebuchet MS, Verdana, sans-serif" font-size="34" font-weight="900" letter-spacing="-3" fill="url(#autorules-gold)">RM</text>
 </svg>
