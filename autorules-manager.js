@@ -1,5 +1,5 @@
 const Config = {
-  VERSION: "150526b12",
+  VERSION: "150526b13",
   BATCH_SIZE: 40,
   BATCH_DELAY_MS: 600,
   ACCOUNT_DELAY_MS: 1000,
@@ -219,6 +219,75 @@ function formatBatchError(response, rule, accountName, accountId, index) {
   if (parsedBody?.parseError) details.push(`body_parse_error=${parsedBody.parseError}`);
 
   return `Batch item ${index + 1} failed for rule "${rule?.name || "unknown"}" in ${accountName} (${accountId}), HTTP ${statusCode}: ${details.join("; ")}`;
+}
+
+function normalizeNumericString(value) {
+  if (typeof value !== "string") {
+    return { value, changed: false, numeric: typeof value === "number" && Number.isFinite(value) };
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { value, changed: false, numeric: false };
+  }
+
+  const normalized = trimmed.replace(",", ".");
+  const numeric = /^-?\d+(?:\.\d+)?$/.test(normalized);
+  return {
+    value: numeric ? normalized : value,
+    changed: numeric && normalized !== value,
+    numeric
+  };
+}
+
+function prepareRuleForImport(rule) {
+  const preparedRule = JSON.parse(JSON.stringify(rule));
+  const notes = [];
+  const errors = [];
+
+  if (preparedRule.execution_spec && Array.isArray(preparedRule.execution_spec.execution_options)) {
+    preparedRule.execution_spec.execution_options = preparedRule.execution_spec.execution_options.filter(option => {
+      if (option?.field !== "user_ids") {
+        return true;
+      }
+
+      const originalValue = Array.isArray(option.value) ? option.value : [option.value];
+      const cleanedValue = originalValue
+        .map(value => (value == null ? "" : String(value).trim()))
+        .filter(Boolean);
+
+      if (cleanedValue.length === 0) {
+        notes.push(`Removed empty user_ids from rule "${preparedRule.name || "unknown"}".`);
+        return false;
+      }
+
+      if (cleanedValue.length !== originalValue.length) {
+        notes.push(`Removed empty user_ids entries from rule "${preparedRule.name || "unknown"}".`);
+      }
+      option.value = cleanedValue;
+      return true;
+    });
+  }
+
+  if (preparedRule.evaluation_spec && Array.isArray(preparedRule.evaluation_spec.filters)) {
+    preparedRule.evaluation_spec.filters.forEach(filter => {
+      const normalized = normalizeNumericString(filter.value);
+      if (normalized.changed) {
+        notes.push(`Normalized numeric value for ${filter.field} in rule "${preparedRule.name || "unknown"}": ${filter.value} -> ${normalized.value}.`);
+        filter.value = normalized.value;
+      }
+
+      if (
+        ["GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL"].includes(filter.operator) &&
+        typeof filter.value === "string" &&
+        !normalizeNumericString(filter.value).numeric
+      ) {
+        errors.push(`Invalid numeric value for ${filter.field} in rule "${preparedRule.name || "unknown"}": ${filter.value}`);
+      }
+    });
+  }
+
+  return { rule: preparedRule, notes, errors };
 }
 
 // ============================================
@@ -938,8 +1007,20 @@ async function importRulesToAccount(accountId, rules, clearExisting, mainErrorLo
     // Import rules with currency conversion
     logMessage(`Importing ${rules.length} autorules to account ${accountId}...`);
     
-    // Convert rules from USD to account currency
-    const convertedRules = rules.map(rule => CurrencyConverter.fromUSD(rule, conversionRate, currency));
+    const preparedRules = rules.map(rule => prepareRuleForImport(rule));
+    preparedRules.forEach(prepared => {
+      prepared.notes.forEach(note => logger.warning(note));
+      prepared.errors.forEach(errorMessage => {
+        logger.error(errorMessage);
+        accountErrorLog.push(errorMessage);
+        if (mainErrorLog) mainErrorLog.push(errorMessage);
+      });
+    });
+
+    // Convert valid rules from USD to account currency after normalizing decimal separators.
+    const convertedRules = preparedRules
+      .filter(prepared => prepared.errors.length === 0)
+      .map(prepared => CurrencyConverter.fromUSD(prepared.rule, conversionRate, currency));
     const ruleChunks = chunkArray(convertedRules, Config.BATCH_SIZE);
     
     for (let chunkIndex = 0; chunkIndex < ruleChunks.length; chunkIndex++) {
@@ -968,12 +1049,12 @@ async function importRulesToAccount(accountId, rules, clearExisting, mainErrorLo
         const batchResponse = await rulesApi.addRulesBatch(accountId, sanitizedRules);
         
         if (!Array.isArray(batchResponse) || batchResponse.length === 0) {
-        const errorMessage = `Batch response empty for account ${accountName} (${accountId}).`;
-        console.error(errorMessage);
-        logger.error(errorMessage);
-        accountErrorLog.push(errorMessage);
-        if (mainErrorLog) mainErrorLog.push(errorMessage);
-        continue;
+          const errorMessage = `Batch response empty for account ${accountName} (${accountId}).`;
+          console.error(errorMessage);
+          logger.error(errorMessage);
+          accountErrorLog.push(errorMessage);
+          if (mainErrorLog) mainErrorLog.push(errorMessage);
+          continue;
         }
         
         for (let i = 0; i < sanitizedRules.length; i++) {
@@ -2297,6 +2378,10 @@ ${stringifyIfNeeded.toString()}
 ${parseBatchBody.toString()}
 
 ${formatBatchError.toString()}
+
+${normalizeNumericString.toString()}
+
+${prepareRuleForImport.toString()}
 
 ${AccountManager.toString()}
 
