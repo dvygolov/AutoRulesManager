@@ -1,5 +1,5 @@
 const Config = {
-  VERSION: "150526b5",
+  VERSION: "150526b9",
   BATCH_SIZE: 40,
   BATCH_DELAY_MS: 600,
   ACCOUNT_DELAY_MS: 1000,
@@ -1341,6 +1341,7 @@ class AutorulesManagerUI {
 
   createDiv() {
     this.div = document.createElement("div");
+    this.div.id = "ywbAutorulesManager";
     this.div.style.position = "fixed";
     this.div.style.top = "50%";
     this.div.style.left = "50%";
@@ -2159,6 +2160,12 @@ class AutorulesManagerUI {
 // Main function to show the autorules manager UI
 async function showAutorulesManager() {
   try {
+    document.getElementById("ywbAutorulesManager")?.remove();
+    document.getElementById("ywbLogPanel")?.remove();
+    Array.from(document.querySelectorAll("body > div"))
+      .filter(element => (element.innerText || "").includes("FB Autorules Manager"))
+      .forEach(element => element.remove());
+
     // Show loading message
     const loadingDiv = document.createElement("div");
     loadingDiv.style.position = "fixed";
@@ -2312,6 +2319,7 @@ showAutorulesManager();`;
 // Make the functions available globally
 window.showAutorulesManager = showAutorulesManager;
 window.copyScriptAsBase64Bookmarklet = copyScriptAsBase64Bookmarklet;
+window.__AutoRulesManagerPayloadBuild = Config.VERSION;
 
 // Auto-run when script is loaded
 showAutorulesManager();
