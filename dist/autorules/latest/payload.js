@@ -1,5 +1,5 @@
 const Config = {
-  VERSION: "150526b11",
+  VERSION: "150526b12",
   BATCH_SIZE: 40,
   BATCH_DELAY_MS: 600,
   ACCOUNT_DELAY_MS: 1000,
@@ -950,6 +950,7 @@ async function importRulesToAccount(accountId, rules, clearExisting, mainErrorLo
           if (!rule.name || !rule.evaluation_spec || !rule.execution_spec || !rule.schedule_spec) {
             const errorMessage = `Skipping rule ${rule.name || 'unknown'} for account ${accountName} (${accountId}): Missing required fields`;
             console.error(errorMessage);
+            logger.error(errorMessage);
             accountErrorLog.push(errorMessage);
             if (mainErrorLog) mainErrorLog.push(errorMessage);
             return null;
@@ -967,11 +968,12 @@ async function importRulesToAccount(accountId, rules, clearExisting, mainErrorLo
         const batchResponse = await rulesApi.addRulesBatch(accountId, sanitizedRules);
         
         if (!Array.isArray(batchResponse) || batchResponse.length === 0) {
-          const errorMessage = `Batch response empty for account ${accountName} (${accountId}).`;
-          console.error(errorMessage);
-          accountErrorLog.push(errorMessage);
-          if (mainErrorLog) mainErrorLog.push(errorMessage);
-          continue;
+        const errorMessage = `Batch response empty for account ${accountName} (${accountId}).`;
+        console.error(errorMessage);
+        logger.error(errorMessage);
+        accountErrorLog.push(errorMessage);
+        if (mainErrorLog) mainErrorLog.push(errorMessage);
+        continue;
         }
         
         for (let i = 0; i < sanitizedRules.length; i++) {
@@ -1015,23 +1017,40 @@ async function importRulesToAccount(accountId, rules, clearExisting, mainErrorLo
       } catch (batchError) {
         const errorMessage = `Batch error for account ${accountName} (${accountId}): ${batchError.message || batchError}`;
         console.error(errorMessage);
+        logger.error(errorMessage);
         accountErrorLog.push(errorMessage);
         if (mainErrorLog) mainErrorLog.push(errorMessage);
       }
     }
     
-    const successMessage = `Successfully imported ${importedCount}/${rules.length} autorules to ${accountName}.`;
-    logger.success(successMessage);
-    accountErrorLog.unshift(successMessage);
-    if (mainErrorLog) mainErrorLog.push(successMessage);
+    const failedRuleCount = Math.max(rules.length - importedCount, 0);
+    const importStatus = importedCount === rules.length ? "success" : importedCount > 0 ? "partial" : "failed";
+    const resultMessage = importStatus === "success"
+      ? `Successfully imported ${importedCount}/${rules.length} autorules to ${accountName}.`
+      : importStatus === "partial"
+        ? `Partially imported ${importedCount}/${rules.length} autorules to ${accountName}; ${failedRuleCount} failed.`
+        : `Failed to import autorules to ${accountName}: 0/${rules.length} imported.`;
+
+    if (importStatus === "success") {
+      logger.success(resultMessage);
+    } else if (importStatus === "partial") {
+      logger.warning(resultMessage);
+    } else {
+      logger.error(resultMessage);
+    }
+    accountErrorLog.unshift(resultMessage);
+    if (mainErrorLog) mainErrorLog.push(resultMessage);
     
     return {
-      success: true,
+      success: importStatus === "success",
+      partial: importStatus === "partial",
+      status: importStatus,
       importedCount,
       importedEnabledCount,
       importedDisabledCount,
       importedOtherCount,
       totalRules: rules.length,
+      failedRuleCount,
       errorLog: accountErrorLog
     };
   } catch (error) {
@@ -1041,11 +1060,14 @@ async function importRulesToAccount(accountId, rules, clearExisting, mainErrorLo
     if (mainErrorLog) mainErrorLog.push(errorMessage);
     return {
       success: false,
+      partial: importedCount > 0,
+      status: importedCount > 0 ? "partial" : "failed",
       importedCount,
       importedEnabledCount,
       importedDisabledCount,
       importedOtherCount,
       totalRules: rules.length,
+      failedRuleCount: Math.max(rules.length - importedCount, 0),
       errorLog: accountErrorLog
     };
   }
@@ -1075,6 +1097,7 @@ async function importAutorulesToSelectedAccounts(accountIds, uiInstance) {
     // Process each account
     logger.info(`Processing ${accountIds.length} accounts...`);
     let successCount = 0;
+    let partialCount = 0;
     let failedCount = 0;
     
     for (let i = 0; i < accountIds.length; i++) {
@@ -1084,8 +1107,7 @@ async function importAutorulesToSelectedAccounts(accountIds, uiInstance) {
       // Import rules to this account
       const result = await importRulesToAccount(accountId, fileContent.rules, clearExisting, errorLog);
       
-      if (result.success) {
-        successCount++;
+      if (result.success || result.partial) {
         const importedStats = {
           ruleCount: result.importedCount,
           enabledRuleCount: result.importedEnabledCount,
@@ -1093,10 +1115,18 @@ async function importAutorulesToSelectedAccounts(accountIds, uiInstance) {
           otherRuleCount: result.importedOtherCount
         };
 
-        if (clearExisting) {
-          accountManager.setRuleStats(accountId, importedStats);
+        if (result.importedCount > 0) {
+          if (clearExisting) {
+            accountManager.setRuleStats(accountId, importedStats);
+          } else {
+            accountManager.addToRuleStats(accountId, importedStats);
+          }
+        }
+
+        if (result.success) {
+          successCount++;
         } else {
-          accountManager.addToRuleStats(accountId, importedStats);
+          partialCount++;
         }
       } else {
         failedCount++;
@@ -1114,8 +1144,14 @@ async function importAutorulesToSelectedAccounts(accountIds, uiInstance) {
       uiInstance.refreshDropdowns();
     }
     
-    const summaryMessage = `Processed ${accountIds.length} accounts: ${successCount} successful, ${failedCount} failed.`;
-    logger.success(summaryMessage);
+    const summaryMessage = `Processed ${accountIds.length} accounts: ${successCount} successful, ${partialCount} partial, ${failedCount} failed.`;
+    if (failedCount > 0) {
+      logger.error(summaryMessage);
+    } else if (partialCount > 0) {
+      logger.warning(summaryMessage);
+    } else {
+      logger.success(summaryMessage);
+    }
   } catch (error) {
     const errorMessage = `Error importing autorules: ${error.message || error}`;
     logger.error(errorMessage);

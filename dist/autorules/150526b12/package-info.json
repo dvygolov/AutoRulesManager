@@ -1,30 +1,30 @@
 {
   "app": "AutoRulesManager",
-  "build": "150526b11",
-  "version": "150526b11",
-  "generatedAt": "2026-05-15T12:21:53.604Z",
+  "build": "150526b12",
+  "version": "150526b12",
+  "generatedAt": "2026-05-15T13:03:22.314Z",
   "payload": {
     "encoding": "base64",
-    "sha256": "ad8ac5495833198ee8c47abc68a558507449f1fa89331a89b842eaa3a8c7dd51",
-    "byteLength": 80430
+    "sha256": "c4883a006f2c0b05a67fac97e71072317dfaa645050fef6ec3e2072f14866bc7",
+    "byteLength": 81808
   },
   "chunks": [
     {
       "index": 1,
       "file": "og/chunk-001.html",
-      "url": "https://autorulesmanager.pages.dev/autorules/150526b11/og/chunk-001.html",
+      "url": "https://autorulesmanager.pages.dev/autorules/150526b12/og/chunk-001.html",
       "latestUrl": "https://autorulesmanager.pages.dev/autorules/latest/og/chunk-001.html",
       "ogObjectId": "",
-      "base64Length": 107240,
-      "base64Sha256": "85e27dd9b4dc2b91ec6217c98fd26b9ad092e25fb8ab9677e894af214649c7c2"
+      "base64Length": 109080,
+      "base64Sha256": "97e4754db552d0826cc72f88cb3bf66fcd01cb60de1d02388f533049c89aa9f2"
     }
   ],
   "source": "autorules-manager.js",
   "chunkSize": 350000,
   "payloadFile": "payload.js",
-  "payloadUrl": "https://autorulesmanager.pages.dev/autorules/150526b11/payload.js",
+  "payloadUrl": "https://autorulesmanager.pages.dev/autorules/150526b12/payload.js",
   "latestPayloadUrl": "https://autorulesmanager.pages.dev/autorules/latest/payload.js",
   "manifestFile": "manifest.html",
-  "manifestUrl": "https://autorulesmanager.pages.dev/autorules/150526b11/manifest.html",
+  "manifestUrl": "https://autorulesmanager.pages.dev/autorules/150526b12/manifest.html",
   "latestManifestUrl": "https://autorulesmanager.pages.dev/autorules/latest/manifest.html"
 }
