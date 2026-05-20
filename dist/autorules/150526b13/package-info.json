@@ -2,11 +2,11 @@
   "app": "AutoRulesManager",
   "build": "150526b13",
   "version": "150526b13",
-  "generatedAt": "2026-05-15T13:40:03.228Z",
+  "generatedAt": "2026-05-20T20:07:54.165Z",
   "payload": {
     "encoding": "base64",
-    "sha256": "c362b64a816c93e1820485142a4fc96cf6f98155ac8fd02c8e5eb8e9e1311968",
-    "byteLength": 84845
+    "sha256": "25110fa1e26022d4cf6ed7a3489b7865c64d99a049c69dffa1a367fa3d667af5",
+    "byteLength": 87327
   },
   "chunks": [
     {
@@ -15,8 +15,8 @@
       "url": "https://autorulesmanager.pages.dev/autorules/150526b13/og/chunk-001.html",
       "latestUrl": "https://autorulesmanager.pages.dev/autorules/latest/og/chunk-001.html",
       "ogObjectId": "",
-      "base64Length": 113128,
-      "base64Sha256": "dda6f6f03c54bcfcd5279157686b35357e3ba7d1fd2e970467471fc65c321d33"
+      "base64Length": 116436,
+      "base64Sha256": "2b5483406600e19689fd6ed0c584068357363c842f3dbefd609525c859f1eb3f"
     }
   ],
   "source": "autorules-manager.js",
