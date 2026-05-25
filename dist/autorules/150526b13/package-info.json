@@ -2,12 +2,14 @@
   "app": "AutoRulesManager",
   "build": "150526b13",
   "version": "150526b13",
-  "generatedAt": "2026-05-25T10:22:40.698Z",
+  "generatedAt": "2026-05-25T10:49:53.523Z",
   "payload": {
     "encoding": "base64",
     "sha256": "25110fa1e26022d4cf6ed7a3489b7865c64d99a049c69dffa1a367fa3d667af5",
     "byteLength": 87327
   },
+  "payloadUrl": "https://autorulesmanager.pages.dev/autorules/150526b13/payload.js",
+  "latestPayloadUrl": "https://autorulesmanager.pages.dev/autorules/latest/payload.js",
   "chunks": [
     {
       "index": 1,
@@ -22,8 +24,6 @@
   "source": "autorules-manager.js",
   "chunkSize": 350000,
   "payloadFile": "payload.js",
-  "payloadUrl": "https://autorulesmanager.pages.dev/autorules/150526b13/payload.js",
-  "latestPayloadUrl": "https://autorulesmanager.pages.dev/autorules/latest/payload.js",
   "manifestFile": "manifest.html",
   "manifestUrl": "https://autorulesmanager.pages.dev/autorules/150526b13/manifest.html",
   "latestManifestUrl": "https://autorulesmanager.pages.dev/autorules/latest/manifest.html"
