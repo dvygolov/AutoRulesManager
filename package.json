@@ -1,6 +1,6 @@
 {
   "name": "autorulesmanager",
-  "version": "280526b1",
+  "version": "240626b1",
   "private": true,
   "description": "Browser-side Facebook Ads Manager automated rules export, import, status, and bookmarklet loader tooling.",
   "scripts": {
